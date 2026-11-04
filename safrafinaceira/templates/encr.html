@@ -1,0 +1,71 @@
+<html>
+    <head>
+        <script>
+            async function generateSymmetricKey() {
+                const key = await crypto.subtle.generateKey(
+                    {
+                        name: "AES-GCM",
+                        length: 256, // You can also use 128 or 192
+                    },
+                    true, // Can the key be exported
+                    ["encrypt", "decrypt"] // What operations can the key be used for
+                );
+                return key;
+            }
+
+            async function encryptString(key, plainText) {
+                const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 bytes for AES-GCM
+
+                const encoder = new TextEncoder();
+                const encodedText = encoder.encode(plainText);
+
+                const encryptedContent = await crypto.subtle.encrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: iv,
+                    },
+                    key,
+                    encodedText
+                );
+
+                return {
+                    cipherText: new Uint8Array(encryptedContent),
+                    iv: iv
+                };
+            }
+
+            async function decryptString(key, encryptedData, iv) {
+                const decryptedContent = await crypto.subtle.decrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: iv,
+                    },
+                    key,
+                    encryptedData
+                );
+
+                const decoder = new TextDecoder();
+                return decoder.decode(decryptedContent);
+            }
+
+            
+            async function demoEncryption() {
+                // Step 1: Generate a symmetric key
+                const key = await generateSymmetricKey();
+
+                // Step 2: Encrypt the string
+                const plainText = "Hello, this is a secret message!";
+                const encryptedData = await encryptString(key, plainText);
+
+                console.log("Encrypted:", encryptedData);
+
+                // Step 3: Decrypt the string
+                const decryptedText = await decryptString(key, encryptedData.cipherText, encryptedData.iv);
+
+                console.log("Decrypted:", decryptedText);
+            }
+
+            demoEncryption();
+        </script>
+    </head>
+</html>
